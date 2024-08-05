@@ -5,23 +5,23 @@ from sqlalchemy import create_engine
 
 # Configuración de la conexión a MySQL
 db_config = {
-    'user': 'root',  # Cambia esto si tu usuario es diferente
-    'password': '',  # Cambia esto si tienes una contraseña
+    'user': 'root',  
+    'password': '',  
     'host': 'localhost',
     'database': 'CompanyData'
 }
 
-# Crear el URI de conexión
+# URI de conexión
 db_uri = f"mysql+mysqlconnector://{db_config['user']}:{db_config['password']}@{db_config['host']}/{db_config['database']}"
 
-# Crear el motor de SQLAlchemy
+# motor de SQLAlchemy
 engine = create_engine(db_uri)
 
 # Leer datos desde MySQL a un DataFrame
 query = "SELECT * FROM EmployeePerformance"
 df = pd.read_sql(query, engine)
 
-# Mostrar los primeros registros del DataFrame para ver los datos
+# Muestra los primeros registros del DataFrame para ver los datos
 print("Primeros registros del DataFrame:")
 print(df.head())
 
