@@ -62,7 +62,7 @@ sns.set(style="whitegrid")
 
 # Histograma del performance_score para todo el conjunto de datos
 plt.figure(figsize=(12, 6))
-sns.histplot(df['performance_score'].dropna(), bins=20, kde=True, color='skyblue')
+sns.histplot(df['performance_score'], bins=20, kde=True, color='skyblue')
 plt.title('Histograma del Performance Score para Todo el Conjunto de Datos')
 plt.xlabel('Performance Score')
 plt.ylabel('Frecuencia')
@@ -75,8 +75,8 @@ def plot_histograms(df):
     departments = df['department'].unique()
     for ax, dept in zip(axes.flat, departments):
         subset = df[df['department'] == dept]
-        if len(subset['performance_score'].dropna()) > 0:
-            sns.histplot(subset['performance_score'].dropna(), bins=20, kde=True, ax=ax)
+        if len(subset['performance_score']) > 0:
+            sns.histplot(subset['performance_score'], bins=20, kde=True, ax=ax)
             ax.set_title(f'{dept} - Performance Score')
             ax.set_xlabel('Performance Score')
             ax.set_ylabel('Frecuencia')
