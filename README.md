@@ -16,5 +16,5 @@ Este proyecto realiza un análisis avanzado de datos utilizando `numpy`, `pandas
 
 1. Clona el repositorio:
    ```bash
-   git clone <URL_DEL_REPOSITORIO>
+   git clone https://github.com/Leonardo0294/advanced-data-analysis.git
    cd advanced-data-analysis
