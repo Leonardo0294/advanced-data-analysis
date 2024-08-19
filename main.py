@@ -7,14 +7,23 @@ from sqlalchemy import create_engine
 class DataLoader:
     def __init__(self, db_config):
         self.db_config = db_config
-        self.engine = self.create_engine()
+        try:
+            self.engine = self.create_engine()
+            print("Conexión a la base de datos establecida con éxito.")
+        except Exception as e:
+            print(f"Error al crear la conexión a la base de datos: {e}")
+            raise
     
     def create_engine(self):
         db_uri = f"mysql+mysqlconnector://{self.db_config['user']}:{self.db_config['password']}@{self.db_config['host']}/{self.db_config['database']}"
         return create_engine(db_uri)
     
     def load_data(self, query):
-        return pd.read_sql(query, self.engine)
+        try:
+            return pd.read_sql(query, self.engine)
+        except Exception as e:
+            print(f"Error al cargar datos: {e}")
+            raise
 
 class DataProcessor:
     def __init__(self, df):
