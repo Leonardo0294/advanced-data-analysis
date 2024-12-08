@@ -1,113 +1,75 @@
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
-from sqlalchemy import create_engine
+from database import Database
+from services.company import CompanyDataService
+from data.analysis.performance import PerformanceAnalysis
 
-# Configuración de la conexión a MySQL
-db_config = {
-    'user': 'root',
-    'password': '',
-    'host': 'localhost',
-    'database': 'CompanyData'
-}
+def main():
+    try:
+        # Configuración de la base de datos
+        db_config = {
+            'user': 'root',
+            'password': '',
+            'host': 'localhost',
+            'database': 'CompanyData'
+        }
 
-# URI de conexión
-db_uri = f"mysql+mysqlconnector://{db_config['user']}:{db_config['password']}@{db_config['host']}/{db_config['database']}"
+        # Crear instancia de la clase Database
+        database = Database(db_config)
 
-# Motor de SQLAlchemy
-engine = create_engine(db_uri)
+        # Crear instancia de la clase CompanyDataService
+        company_data_service = CompanyDataService(database)
+        
+        # Inicializar la tabla (si es necesario)
+        company_data_service.init_table()
+        
+        # Obtener los datos de rendimiento de los empleados
+        performance_data = company_data_service.get_employees_performance()
+        data_frame = pd.DataFrame(performance_data)
 
-# Leer datos desde MySQL a un DataFrame
-query = "SELECT * FROM EmployeePerformance"
-df = pd.read_sql(query, engine)
+        # Crear instancia de la clase PerformanceAnalysis
+        performance_analysis = PerformanceAnalysis(data_frame)
 
-# Muestra los primeros registros del DataFrame para ver los datos
-print("Primeros registros del DataFrame:")
-print(df.head())
+        # Descripción de los departamentos
+        performance_analysis.describe_departments()
 
-# Verificar los valores únicos en la columna 'department'
-print("Valores únicos en 'department':")
-print(df['department'].unique())
+        # Correlaciones
+        correlations = {
+            ("years_with_company", "performance_score"): performance_analysis.correlation_between(
+                column1="years_with_company", column2="performance_score"),
+            ("salary", "performance_score"): performance_analysis.correlation_between(
+                column1="salary", column2="performance_score")
+        }
 
-# Tratamiento de datos faltantes
-df = df.dropna(subset=['performance_score', 'department', 'years_with_company', 'salary'])
+        for (column1, column2), correlation in correlations.items():
+            print(f"Correlación entre {column1} y {column2}: {correlation}")
 
-# Verificar resumen de 'performance_score'
-print("Resumen de 'performance_score':")
-print(df['performance_score'].describe())
+        # Visualización de datos
+        plt.figure(figsize=(15, 10))
 
-# Análisis de Datos
-print("Estadísticas por Departamento:")
-stats = df.groupby('department').agg(
-    performance_score_mean=('performance_score', 'mean'),
-    performance_score_median=('performance_score', 'median'),
-    performance_score_std=('performance_score', 'std'),
-    salary_mean=('salary', 'mean'),
-    salary_median=('salary', 'median'),
-    salary_std=('salary', 'std'),
-    num_employees=('id', 'count')
-).reset_index()
-print(stats)
+        # Histogramas por departamento
+        departments = ["Engineering", "Sales", "Services"]
+        for i, dept in enumerate(departments, start=1):
+            plt.subplot(3, 3, i)
+            performance_analysis.histograms_by_department(department=dept)
+            plt.title(f'Histograma del Performance Score - {dept}')
 
-# Calcular correlaciones
-correlation_years_performance = df['years_with_company'].corr(df['performance_score'])
-correlation_salary_performance = df['salary'].corr(df['performance_score'])
-print(f"Correlación entre years_with_company y performance_score: {correlation_years_performance}")
-print(f"Correlación entre salary y performance_score: {correlation_salary_performance}")
+        # Gráficos de dispersión
+        plt.subplot(3, 3, 7)
+        performance_analysis.disperssion_between(
+            column1="years_with_company", column2="performance_score")
+        plt.title('Dispersión: Years with Company vs. Performance Score')
 
-# Visualización de Datos
-# Configuración de estilo de gráficos
-sns.set(style="whitegrid")
+        plt.subplot(3, 3, 8)
+        performance_analysis.disperssion_between(
+            column1="salary", column2="performance_score")
+        plt.title('Dispersión: Salary vs. Performance Score')
 
-# Histograma del performance_score para todo el conjunto de datos
-plt.figure(figsize=(12, 6))
-sns.histplot(df['performance_score'], bins=20, kde=True, color='skyblue')
-plt.title('Histograma del Performance Score para Todo el Conjunto de Datos')
-plt.xlabel('Performance Score')
-plt.ylabel('Frecuencia')
-plt.show()
+        plt.tight_layout()
+        plt.show()
 
-# Histograma del performance_score para cada departamento en subplots
-def plot_histograms(df):
-    """Genera histogramas del performance_score para cada departamento."""
-    fig, axes = plt.subplots(nrows=2, ncols=3, figsize=(18, 10), sharey=True)
-    departments = df['department'].unique()
-    for ax, dept in zip(axes.flat, departments):
-        subset = df[df['department'] == dept]
-        if len(subset['performance_score']) > 0:
-            sns.histplot(subset['performance_score'], bins=20, kde=True, ax=ax)
-            ax.set_title(f'{dept} - Performance Score')
-            ax.set_xlabel('Performance Score')
-            ax.set_ylabel('Frecuencia')
-        else:
-            ax.set_visible(False)
-    plt.tight_layout()
-    plt.show()
+    except Exception as err:
+        print("Ocurrió un error al ejecutar el script: ", err)
 
-# Llamada a la función para generar histogramas
-plot_histograms(df)
-
-# Gráfico de caja del performance_score por departamento
-plt.figure(figsize=(12, 6))
-sns.boxplot(x='department', y='performance_score', data=df)
-plt.title('Distribución del Performance Score por Departamento')
-plt.xlabel('Department')
-plt.ylabel('Performance Score')
-plt.show()
-
-# Gráfico de dispersión de years_with_company vs. performance_score
-plt.figure(figsize=(12, 6))
-sns.scatterplot(x='years_with_company', y='performance_score', data=df, color='blue')
-plt.title('Gráfico de Dispersión: Years with Company vs. Performance Score')
-plt.xlabel('Years with Company')
-plt.ylabel('Performance Score')
-plt.show()
-
-# Gráfico de dispersión de salary vs. performance_score
-plt.figure(figsize=(12, 6))
-sns.scatterplot(x='salary', y='performance_score', data=df, color='green')
-plt.title('Gráfico de Dispersión: Salary vs. Performance Score')
-plt.xlabel('Salary')
-plt.ylabel('Performance Score')
-plt.show()
+if __name__ == "__main__":
+    main()
